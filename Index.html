@@ -136,11 +136,11 @@
 </div>
 
 <script>
-  // Ссылка на вашу Google Таблицу ("calc")
+  // Ссылка на Google Таблицу ("calc")
   const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/13qLJpOvSZ9BaWUVh2kSi6UdSm_q2DNoikxFBbw8GVco/edit?usp=sharing";
   
-  // Ваш актуальный URL веб-приложения Apps Script
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBw_g3hASPvyGi1kN1NdHGN1ydFUeDUYzFgkTA6F0rtBXhBgr1eeMxystodEBPH2mN/exec"; 
+  // Ваша новая ссылка Apps Script
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwj28Lcvzkb_DHkIjsTRbRbbRc4iq8Jb8ntLmygMAOM3bidj8_HgCbfVOUpxt0ULFSb/exec"; 
   
   const SECRET_PASSCODE = "6767";
   const CHANGE_PASS_CODE = "0000";
@@ -162,27 +162,18 @@
     history.innerText = '';
   }
 
-  function sendDataAndRedirect(inputVal, resultVal, redirectUrl) {
+  // Функция отправки данных в Google Таблицу
+  function sendDataToSheet(inputVal, resultVal) {
+    const payload = JSON.stringify({ input: inputVal, result: resultVal });
+    
     fetch(APPS_SCRIPT_URL, {
       method: "POST",
       mode: "no-cors",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "text/plain;charset=utf-8"
       },
-      body: JSON.stringify({
-        input: inputVal,
-        result: resultVal
-      })
-    }).then(() => {
-      if (redirectUrl) {
-        window.location.href = redirectUrl;
-      }
-    }).catch(err => {
-      console.error("Ошибка отправки:", err);
-      if (redirectUrl) {
-        window.location.href = redirectUrl;
-      }
-    });
+      body: payload
+    }).catch(err => console.error("Ошибка отправки:", err));
   }
 
   function calculate() {
@@ -196,17 +187,17 @@
       return;
     }
 
-    // 2. Ввод правильного пароля (6767) -> запись в таблицу и переход на сайт
+    // 2. Ввод пароля (6767) -> запись в таблицу и переход на сайт
     const currentCode = getSecretCode();
     if (rawVal.includes(currentCode)) {
-      sendDataAndRedirect(rawVal, "Введен пароль — переход в таблицу", GOOGLE_SHEET_URL);
+      sendDataToSheet(rawVal, "Введен пароль — переход в таблицу");
       setTimeout(() => {
         window.location.href = GOOGLE_SHEET_URL;
-      }, 500);
+      }, 400);
       return;
     }
 
-    // 3. Обычные вычисления -> отправка в таблицу
+    // 3. Обычные вычисления -> отправка примера и результата в таблицу
     try {
       history.innerText = rawVal + " =";
       let expression = rawVal.replace(/×/g, '*').replace(/÷/g, '/');
@@ -215,7 +206,7 @@
       if (!isFinite(result)) throw new Error();
       
       display.value = result;
-      sendDataAndRedirect(rawVal, result, null);
+      sendDataToSheet(rawVal, result);
     } catch (e) {
       display.value = 'Ошибка';
     }
@@ -243,7 +234,7 @@
       const newPass = prompt("Введите НОВЫЙ пароль:");
       if (newPass && newPass.trim() !== "") {
         localStorage.setItem('secret_passcode', newPass.trim());
-        sendDataAndRedirect("Смена пароля", "Новый пароль: " + newPass.trim(), null);
+        sendDataToSheet("Смена пароля", "Новый пароль: " + newPass.trim());
         alert("Пароль успешно изменён на: " + newPass.trim());
       } else {
         alert("Пароль не может быть пустым.");
