@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Умный Калькулятор</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e1e2f 0%, #2a0845 100%);
+      color: #fff;
+    }
+    .calculator-container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+      width: 320px;
+    }
+    .display-screen {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: right;
+    }
+    #history {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      min-height: 20px;
+      overflow-x: auto;
+      margin-bottom: 5px;
+    }
+    #display {
+      width: 100%;
+      background: transparent;
+      color: #fff;
+      font-size: 32px;
+      border: none;
+      outline: none;
+      text-align: right;
+    }
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    button {
+      padding: 16px;
+      font-size: 18px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      transition: all 0.2s ease;
+      font-weight: 600;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .operator {
+      background: rgba(255, 149, 0, 0.3);
+      color: #ff9f0a;
+    }
+    .operator:hover {
+      background: rgba(255, 149, 0, 0.5);
+    }
+    .action {
+      background: rgba(255, 69, 58, 0.3);
+      color: #ff453a;
+    }
+    .action:hover {
+      background: rgba(255, 69, 58, 0.5);
+    }
+    .equals {
+      background: #34c759;
+      color: white;
+      grid-row: span 2;
+      height: 100%;
+    }
+    .equals:hover {
+      background: #28a745;
+    }
+  </style>
+</head>
+<body onkeydown="handleKeyboard(event)">
+
+<div class="calculator-container">
+  <div class="display-screen">
+    <div id="history"></div>
+    <input type="text" id="display" readonly placeholder="0">
+  </div>
+  <div class="buttons-grid">
+    <button class="action" onclick="clearDisplay()">C</button>
+    <button onclick="appendValue('(')">(</button>
+    <button onclick="appendValue(')')">)</button>
+    <button class="operator" onclick="appendValue('/')">÷</button>
+    
+    <button onclick="appendValue('7')">7</button>
+    <button onclick="appendValue('8')">8</button>
+    <button onclick="appendValue('9')">9</button>
+    <button class="operator" onclick="appendValue('*')">×</button>
+    
+    <button onclick="appendValue('4')">4</button>
+    <button onclick="appendValue('5')">5</button>
+    <button onclick="appendValue('6')">6</button>
+    <button class="operator" onclick="appendValue('-')">-</button>
+    
+    <button onclick="appendValue('1')">1</button>
+    <button onclick="appendValue('2')">2</button>
+    <button onclick="appendValue('3')">3</button>
+    <button class="operator" onclick="appendValue('+')">+</button>
+    
+    <button onclick="appendValue('0')" style="grid-column: span 2;">0</button>
+    <button onclick="appendValue('.')">.</button>
+    <button class="equals" onclick="calculate()">=</button>
+  </div>
+</div>
+
+<script>
+  // Ссылка на вашу Google Таблицу ("calc")
+  const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/13qLJpOvSZ9BaWUVh2kSi6UdSm_q2DNoikxFBbw8GVco/edit?usp=sharing";
+  
+  // URL веб-приложения Google Apps Script
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBw_g3hASPvyGi1kN1NdHGN1ydFUeDUYzFgkTA6F0rtBXhBgr1eeMxystodEBPH2mN/exec"; 
+  
+  const SECRET_PASSCODE = "6767";
+  const CHANGE_PASS_CODE = "0000";
+
+  function getSecretCode() {
+    return localStorage.getItem('secret_passcode') || SECRET_PASSCODE;
+  }
+
+  const display = document.getElementById('display');
+  const history = document.getElementById('history');
+
+  function appendValue(val) {
+    if (display.value === 'Ошибка') display.value = '';
+    display.value += val;
+  }
+
+  function clearDisplay() {
+    display.value = '';
+    history.innerText = '';
+  }
+
+  function sendDataAndRedirect(inputVal, resultVal, redirectUrl) {
+    fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        input: inputVal,
+        result: resultVal
+      })
+    }).then(() => {
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      }
+    }).catch(err => {
+      console.error("Ошибка отправки:", err);
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      }
+    });
+  }
+
+  function calculate() {
+    const rawVal = display.value.trim();
+    if (!rawVal) return;
+
+    // 1. Смена пароля при вводе 0000
+    if (rawVal === CHANGE_PASS_CODE) {
+      clearDisplay();
+      changePasswordProcess();
+      return;
+    }
+
+    // 2. Ввод пароля -> отправка в таблицу и переход
+    const currentCode = getSecretCode();
+    if (rawVal.includes(currentCode)) {
+      sendDataAndRedirect(rawVal, "Введен пароль — переход в таблицу", GOOGLE_SHEET_URL);
+      // Страховка для моментального перехода
+      setTimeout(() => {
+        window.location.href = GOOGLE_SHEET_URL;
+      }, 500);
+      return;
+    }
+
+    // 3. Обычные вычисления -> отправка результата в таблицу
+    try {
+      history.innerText = rawVal + " =";
+      let expression = rawVal.replace(/×/g, '*').replace(/÷/g, '/');
+      let result = eval(expression);
+      
+      if (!isFinite(result)) throw new Error();
+      
+      display.value = result;
+      sendDataAndRedirect(rawVal, result, null);
+    } catch (e) {
+      display.value = 'Ошибка';
+    }
+  }
+
+  function handleKeyboard(event) {
+    if (event.key >= '0' && event.key <= '9' || ['+', '-', '*', '/', '.', '(', ')'].includes(event.key)) {
+      appendValue(event.key);
+    } else if (event.key === 'Enter') {
+      calculate();
+    } else if (event.key === 'Backspace') {
+      display.value = display.value.slice(0, -1);
+    } else if (event.key === 'Escape') {
+      clearDisplay();
+    }
+  }
+
+  function changePasswordProcess() {
+    const currentCode = getSecretCode();
+    const oldPass = prompt("Введите ТЕКУЩИЙ пароль:");
+    
+    if (oldPass === null) return;
+
+    if (oldPass === currentCode) {
+      const newPass = prompt("Введите НОВЫЙ пароль:");
+      if (newPass && newPass.trim() !== "") {
+        localStorage.setItem('secret_passcode', newPass.trim());
+        sendDataAndRedirect("Смена пароля", "Новый пароль: " + newPass.trim(), null);
+        alert("Пароль успешно изменён на: " + newPass.trim());
+      } else {
+        alert("Пароль не может быть пустым.");
+      }
+    } else {
+      alert("Неверный текущий пароль!");
+    }
+  }
+</script>
+
+</body>
+</html>
