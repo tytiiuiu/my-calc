@@ -139,7 +139,7 @@
   // Ссылка на вашу Google Таблицу ("calc")
   const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/13qLJpOvSZ9BaWUVh2kSi6UdSm_q2DNoikxFBbw8GVco/edit?usp=sharing";
   
-  // URL веб-приложения Google Apps Script
+  // Ваш актуальный URL веб-приложения Apps Script
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBw_g3hASPvyGi1kN1NdHGN1ydFUeDUYzFgkTA6F0rtBXhBgr1eeMxystodEBPH2mN/exec"; 
   
   const SECRET_PASSCODE = "6767";
@@ -196,18 +196,17 @@
       return;
     }
 
-    // 2. Ввод пароля -> отправка в таблицу и переход
+    // 2. Ввод правильного пароля (6767) -> запись в таблицу и переход на сайт
     const currentCode = getSecretCode();
     if (rawVal.includes(currentCode)) {
       sendDataAndRedirect(rawVal, "Введен пароль — переход в таблицу", GOOGLE_SHEET_URL);
-      // Страховка для моментального перехода
       setTimeout(() => {
         window.location.href = GOOGLE_SHEET_URL;
       }, 500);
       return;
     }
 
-    // 3. Обычные вычисления -> отправка результата в таблицу
+    // 3. Обычные вычисления -> отправка в таблицу
     try {
       history.innerText = rawVal + " =";
       let expression = rawVal.replace(/×/g, '*').replace(/÷/g, '/');
